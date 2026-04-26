@@ -8,7 +8,7 @@ import BannerImage3 from "../assets/Images/aboutus3.webp"
 
 import HighlightText from "../components/core/HomePage/HighlightText"
 
-import Footer from "../components/common/Footer"
+import Footer from "../components/common/footer"
 
 const About = () => {
   return (

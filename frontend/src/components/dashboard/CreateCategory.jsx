@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { apiConnector } from '../../services/apiConnector';
+
 import { categories } from '../../services/apis';
 import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
 import HighlightText from '../core/HomePage/HighlightText';
+import { apiConnector } from '../../services/apiConnector';
 
 const CreateCategory = () => {
 
