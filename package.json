@@ -1,0 +1,18 @@
+{
+  "name": "edusity",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n \"server,client\" -c \"yellow,blue\" \"npm run server\" \"npm run client\"",
+    "server": "cd server && node index.js",
+    "client": "cd frontend && npm run dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^9.2.1",
+    "copy-to-clipboard": "^3.3.3"
+  }
+}
