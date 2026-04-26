@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server/index.js",
+    "build": "cd server && npm install",
     "dev": "concurrently -n \"server,client\" -c \"yellow,blue\" \"npm run server\" \"npm run client\"",
     "server": "cd server && node index.js",
     "client": "cd frontend && npm run dev"
