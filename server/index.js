@@ -29,7 +29,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
     cors({
-        origin:"http://localhost:3000",  //frontend url
+        origin:["http://localhost:3000",  //frontend url
+        "https://your-app.vercel.app",], // backend url
         credentials:true,
     })
 )
