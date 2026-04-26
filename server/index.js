@@ -30,7 +30,7 @@ app.use(cookieParser());
 app.use(
     cors({
         origin:["http://localhost:3000",  //frontend url
-        "https://your-app.vercel.app",], // backend url
+        "https://ed-tech-platform-lhost.onrender.com",], // backend url
         credentials:true,
     })
 )
