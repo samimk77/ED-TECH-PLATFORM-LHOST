@@ -47,7 +47,7 @@ const Home = () => {
          
             <div className='flex gap-5 mt-8 items-center justify-center' > 
                 <CTAButton active={true} linkto={"/signup"}>Learn More</CTAButton>
-                <CTAButton>Book a Demo</CTAButton>
+                <CTAButton linkto={"/contact"}>Book a Demo</CTAButton>
             </div>
 
             <div className=' mt-18 w-full sm:w-[90%] lg:w-[80%] mx-auto relative'>
