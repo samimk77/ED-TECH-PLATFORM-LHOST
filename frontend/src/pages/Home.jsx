@@ -12,6 +12,7 @@ import Instructor from '../components/core/HomePage/Instructor';
 import Review from '../components/core/HomePage/Review';
 import Footer from '../components/common/footer';
 import ExploreMore from '../components/core/HomePage/ExploreMore';
+import { useSelector } from 'react-redux';
 
 
 const Home = () => {
