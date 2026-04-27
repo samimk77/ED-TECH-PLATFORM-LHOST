@@ -15,6 +15,7 @@ import ExploreMore from '../components/core/HomePage/ExploreMore';
 
 
 const Home = () => {
+      const { token } = useSelector((state) => state.auth);
   return (
     <div>
         {/*SECTION 1 DARK BLUE BG  */}
@@ -98,7 +99,7 @@ const Home = () => {
                        ctabtn2={
                         {
                             btntext:"Learn more",
-                            linkto:"/signup",
+                            linkto:"/about",
                             active:false
                         }
                     }
@@ -132,7 +133,7 @@ const Home = () => {
                     ctabtn1={
                         {
                             btntext:"Continue lesson",
-                            linkto:"/signup",
+                            linkto: token? "/dashboard/getAllEnrolledCourses" :"/signup",
                             active:true
                         }
                     }
@@ -140,7 +141,7 @@ const Home = () => {
                        ctabtn2={
                         {
                             btntext:"Learn more",
-                            linkto:"/signup",
+                            linkto:"/about",
                             active:false
                         }
                     }
@@ -219,7 +220,7 @@ const Home = () => {
                            
                     </div>
                     <div className='w-fit mt-10'>
-                     <CTAButton children={"Learn more"} active={true}/>
+                     <CTAButton children={"Learn more"} active={true} linkto={"/about"}/>
 
                     </div>
                     
