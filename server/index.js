@@ -6,10 +6,10 @@ const app=express();
 app.use(express.urlencoded({ extended: true })); //iske wajah se profile pic change nahi horha tha ye add krna tha
 
 const userRoutes = require("./routes/User")
-const courseRoutes=require("../server/routes/Course")
-const profileRoutes=require("../server/routes/Profile")
-const paymentRoutes=require("../server/routes/Payment")
-const contactRoutes=require("../server/routes/Contact")
+const courseRoutes=require("./routes/Course")
+const profileRoutes=require("./routes/Profile")
+const paymentRoutes=require("./routes/Payment")
+const contactRoutes=require("./routes/Contact")
 
 const database=require("../server/config/database")
 const cookieParser=require("cookie-parser")
