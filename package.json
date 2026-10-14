@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently -n \"server,client\" -c \"yellow,blue\" \"npm run server\" \"npm run client\"",
-    "server": "cd server && node index.js",
-    "client": "cd frontend && npm run dev"
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"yellow.bold,cyan.bold\" \"npm run server\" \"npm run client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix frontend"
   },
   "keywords": [],
   "author": "",
