@@ -117,8 +117,28 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 
+  const session = await mongoose.startSession();
   try {
-    await enrollStudents(courses, userId);
+    session.startTransaction();
+
+    const enrolledCoursesInfo = await enrollStudents(courses, userId, session);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Send emails after successful commit
+    for (const info of enrolledCoursesInfo) {
+      try {
+        await mailSender(
+          info.email,
+          `Successfully enrolled in ${info.courseName}`,
+          `You have been successfully enrolled in ${info.courseName}.`
+        );
+      } catch (mailError) {
+        console.error("Email sending failed:", mailError);
+        // We log the error but don't fail the request since database transaction committed successfully.
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -126,6 +146,8 @@ exports.verifyPayment = async (req, res) => {
     });
 
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.log(error);
     return res.status(500).json({
       success: false,
@@ -138,16 +160,18 @@ exports.verifyPayment = async (req, res) => {
 // ==============================
 // ENROLL STUDENTS
 // ==============================
-const enrollStudents = async (courses, userId) => {
+const enrollStudents = async (courses, userId, session) => {
   if (!courses || !userId) {
     throw new Error("Courses or userId missing");
   }
 
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).session(session);
 
   if (!user) {
     throw new Error("User not found");
   }
+
+  const enrolledCoursesInfo = [];
 
   for (const courseId of courses) {
 
@@ -159,7 +183,7 @@ const enrollStudents = async (courses, userId) => {
           studentsEnrolled: userId,
         },
       },
-      { new: true }
+      { new: true, session }
     );
 
     if (!enrolledCourse) {
@@ -173,16 +197,15 @@ const enrollStudents = async (courses, userId) => {
         $addToSet: {
           courses: courseId,
         },
-      }
+      },
+      { session }
     );
 
-    // send email
-    await mailSender(
-      user.email,
-      `Successfully enrolled in ${enrolledCourse.courseName}`,
-      `You have been successfully enrolled in ${enrolledCourse.courseName}.`
-    );
+    enrolledCoursesInfo.push({
+      email: user.email,
+      courseName: enrolledCourse.courseName,
+    });
   }
 
-  return true;
+  return enrolledCoursesInfo;
 };

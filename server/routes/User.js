@@ -24,6 +24,32 @@ const {
 
 const { auth,isAdmin } = require("../middlewares/auth")
 
+const rateLimit = require("express-rate-limit");
+
+// Limit login attempts to 10 requests per 15 minutes
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  message: {
+    success: false,
+    message: "Too many login attempts from this IP, please try again after 15 minutes",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Limit OTP generation requests to 5 requests per 15 minutes
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: {
+    success: false,
+    message: "Too many OTP requests from this IP, please try again after 15 minutes",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Routes for Login, Signup, and Authentication
 
 // ********************************************************************************************************
@@ -31,13 +57,13 @@ const { auth,isAdmin } = require("../middlewares/auth")
 // ********************************************************************************************************
 
 // Route for user login
-router.post("/login", login)
+router.post("/login", loginLimiter, login)
 
 // Route for user signup
 router.post("/signup", signUp)
 
 // Route for sending OTP to the user's email
-router.post("/otp", sendOTP)
+router.post("/otp", otpLimiter, sendOTP)
 
 // Route for Changing the password
 router.post("/password", auth, changePassword)

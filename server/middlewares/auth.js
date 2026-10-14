@@ -9,6 +9,7 @@ exports.auth = async (req, res, next) => {
      const authHeader = req.headers.authorization;
 
       const token =
+      (req.cookies && req.cookies.token) ||
       (req.body && req.body.token) ||   // ✅ safe check
       (authHeader && authHeader.startsWith("Bearer ")
         ? authHeader.replace("Bearer ", "")

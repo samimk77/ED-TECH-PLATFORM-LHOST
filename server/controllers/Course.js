@@ -2,8 +2,48 @@ const Course = require("../models/Course");
 const User = require("../models/User");
 const { uploadImageToCloudinary } = require("../utils/imageUplader");
 const Category = require("../models/category");
-const Section =require("../models/Section")
-const SubSection=require("../models/SubSection")
+const Section = require("../models/Section");
+const SubSection = require("../models/SubSection");
+const redisClient = require("../config/redis");
+const { CACHE_TTL_SECONDS } = require("../config/cache");
+
+// ─── Cache Config ───────────────────────────────────────
+const CACHE_TTL = CACHE_TTL_SECONDS; // imported from config/cache.js
+const CACHE_KEYS = {
+  ALL_COURSES: "courses:all",
+  courseById: (id) => `course:${id}`,
+};
+
+// ─── Helper: safe Redis get ──────────────────────────────────
+const getCache = async (key) => {
+  try {
+    const data = await redisClient.get(key);
+    return data ? JSON.parse(data) : null;
+  } catch (err) {
+    console.error(`⚠️  Redis GET failed for key "${key}":`, err.message);
+    return null; // fallback to DB silently
+  }
+};
+
+// ─── Helper: safe Redis set ──────────────────────────────────
+const setCache = async (key, value, ttl = CACHE_TTL) => {
+  try {
+    await redisClient.setex(key, ttl, JSON.stringify(value));
+    console.log(`✅ Redis cached: "${key}" (TTL: ${ttl}s)`);
+  } catch (err) {
+    console.error(`⚠️  Redis SET failed for key "${key}":`, err.message);
+  }
+};
+
+// ─── Helper: safe Redis delete ───────────────────────────────
+const deleteCache = async (...keys) => {
+  try {
+    await redisClient.del(...keys);
+    console.log(`🗑️  Redis cache cleared: [${keys.join(", ")}]`);
+  } catch (err) {
+    console.error(`⚠️  Redis DEL failed:`, err.message);
+  }
+};
 //create course
 exports.createCourse = async (req, res) => {
   try {
@@ -85,17 +125,19 @@ await updatedCategory.save();
 
 
 
-    //return res
+    // 🗑️ Invalidate courses list cache since a new course was added
+    await deleteCache(CACHE_KEYS.ALL_COURSES);
+
     return res.status(200).json({
       success: true,
-      message: "course created successfully",
+      message: "Course created successfully",
       data: newCourse,
     });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: "failed to create course",
+      message: "Failed to create course",
       error: error.message,
     });
   }
@@ -105,16 +147,33 @@ await updatedCategory.save();
 
 exports.getAllCourses = async (req, res) => {
   try {
+    // 1️⃣ Try Redis cache first
+    const cached = await getCache(CACHE_KEYS.ALL_COURSES);
+    if (cached) {
+      console.log("⚡ getAllCourses served from Redis cache");
+      return res.status(200).json({
+        success: true,
+        fromCache: true,
+        data: cached,
+      });
+    }
+
+    // 2️⃣ Cache miss — fetch from MongoDB
     const allCourses = await Course.find({});
+
+    // 3️⃣ Store in Redis for next request
+    await setCache(CACHE_KEYS.ALL_COURSES, allCourses);
+
     return res.status(200).json({
-  success: true,
-  data: allCourses,
-});
+      success: true,
+      fromCache: false,
+      data: allCourses,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: "cannot fetch all courses",
+      message: "Cannot fetch all courses",
     });
   }
 };
@@ -122,56 +181,69 @@ exports.getAllCourses = async (req, res) => {
 
 //get ALL COURSE DETAILS
 
-exports.getCourseDetails=async(req,res)=>{
-
+exports.getCourseDetails = async (req, res) => {
   try {
-    
-    //get id
-    const {courseId}=req.params;
+    const { courseId } = req.params;
 
-    //find course details
-    const courseDetails = await Course.find(
-                                           {_id:courseId}).populate(
-                                            {
-                                              path:"instructor",
-                                              populate:{
-                                                path:"additionalDetails"
-                                              }
-                                            }
-                                            )
-                                            .populate("category")
-                                            //.populate("ratingAndReview")
-                                            .populate({
-                                              path:"courseContent",
-                                              populate:{
-                                                path:"subSection",
-                                              }
-                                            })
-                                            .exec();
+    // ✅ Validate ObjectId before hitting MongoDB
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid course ID: "${courseId}"`,
+      });
+    }
 
-              //validation
-              if(!courseDetails){
-                return res.status(400).json({
-                  success:false,
-                  message:`cannot find course with ${courseId}`,
-                })
-              }  
-              
-              return res.status(200).json({
-                success:true,
-                message:"course details fetched succcessfully",
-                data:courseDetails,
-              })
-    
-    
-        } catch (error) {
-          console.log(error);
-          return res.status(400).json({
-            success:false,
-            message:"internal server error while fetching course data"
-          })
-          
-    
+    const cacheKey = CACHE_KEYS.courseById(courseId);
+
+    // 1️⃣ Try Redis cache first
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      console.log(`⚡ getCourseDetails [${courseId}] served from Redis cache`);
+      return res.status(200).json({
+        success: true,
+        fromCache: true,
+        message: "Course details fetched successfully",
+        data: cached,
+      });
+    }
+
+    // 2️⃣ Cache miss — fetch from MongoDB with full populate
+    const courseDetails = await Course.find({ _id: courseId })
+      .populate({
+        path: "instructor",
+        populate: { path: "additionalDetails" },
+      })
+      .populate("category")
+      //.populate("ratingAndReview")
+      .populate({
+        path: "courseContent",
+        populate: { path: "subSection" },
+      })
+      .exec();
+
+    if (!courseDetails) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot find course with id: ${courseId}`,
+      });
+    }
+
+    // 3️⃣ Store in Redis
+    await setCache(cacheKey, courseDetails);
+
+    return res.status(200).json({
+      success: true,
+      fromCache: false,
+      message: "Course details fetched successfully",
+      data: courseDetails,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      success: false,
+      message: "Internal server error while fetching course data",
+    });
   }
 }
 
@@ -215,11 +287,13 @@ exports.deleteCourse = async (req, res) => {
     // ✅ DELETE COURSE
     await Course.findByIdAndDelete(courseId);
 
+    // 🗑️ Invalidate both the list cache and this course's detail cache
+    await deleteCache(CACHE_KEYS.ALL_COURSES, CACHE_KEYS.courseById(courseId));
+
     return res.status(200).json({
       success: true,
       message: "Course deleted successfully",
     });
-
   } catch (error) {
     console.log("DELETE COURSE ERROR:", error);
     return res.status(500).json({
@@ -257,12 +331,14 @@ exports.publishCourse = async (req, res) => {
       { new: true }
     );
 
+    // 🗑️ Invalidate caches since course status changed
+    await deleteCache(CACHE_KEYS.ALL_COURSES, CACHE_KEYS.courseById(courseId));
+
     return res.status(200).json({
       success: true,
       message: "Course published successfully",
       data: updatedCourse,
     });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({

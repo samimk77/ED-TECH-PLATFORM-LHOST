@@ -76,8 +76,9 @@ router.get("/ratings", getAllRating)
 router.post("/", auth, isInstructor, createCourse)
 // Get all Registered Courses
 router.get("/", getAllCourses)
+router.get("/all", getAllCourses)  // explicit alias: /api/v1/course/all
 
-// Get Details for a Specific Courses
+// Get Details for a Specific Course
 router.get("/:courseId", getCourseDetails)
 // Delete a Course
 router.delete("/:courseId", deleteCourse)
