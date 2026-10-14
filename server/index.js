@@ -3,7 +3,11 @@ require("dotenv").config();
 const express = require("express")
 const app = express();
 
-app.use(express.urlencoded({ extended: true })); //iske wajah se profile pic change nahi horha tha ye add krna tha
+// Trust the first proxy — required for express-rate-limit to read
+// the real client IP (X-Forwarded-For) behind Render / Nginx / etc.
+app.set("trust proxy", 1);
+
+app.use(express.urlencoded({ extended: true }));
 
 const userRoutes = require("./routes/User")
 const courseRoutes = require("../server/routes/Course")
@@ -30,7 +34,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
     cors({
-        origin: "http://localhost:3000",  //frontend url
+        origin: process.env.CLIENT_URL || "http://localhost:3000",
         credentials: true,
     })
 )
