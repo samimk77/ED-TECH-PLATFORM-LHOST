@@ -29,9 +29,9 @@ const getCache = async (key) => {
 const setCache = async (key, value, ttl = CACHE_TTL) => {
   try {
     await redisClient.setex(key, ttl, JSON.stringify(value));
-    console.log(`✅ Redis cached: "${key}" (TTL: ${ttl}s)`);
+    console.log(`cached: ${key} (${ttl}s)`);
   } catch (err) {
-    console.error(`⚠️  Redis SET failed for key "${key}":`, err.message);
+    console.error(`cache set failed for "${key}":`, err.message);
   }
 };
 
@@ -39,9 +39,9 @@ const setCache = async (key, value, ttl = CACHE_TTL) => {
 const deleteCache = async (...keys) => {
   try {
     await redisClient.del(...keys);
-    console.log(`🗑️  Redis cache cleared: [${keys.join(", ")}]`);
+    console.log(`cache cleared: ${keys.join(", ")}`);
   } catch (err) {
-    console.error(`⚠️  Redis DEL failed:`, err.message);
+    console.error(`cache delete failed:`, err.message);
   }
 };
 //create course
@@ -150,7 +150,7 @@ exports.getAllCourses = async (req, res) => {
     // 1️⃣ Try Redis cache first
     const cached = await getCache(CACHE_KEYS.ALL_COURSES);
     if (cached) {
-      console.log("⚡ getAllCourses served from Redis cache");
+      console.log("courses served from cache");
       return res.status(200).json({
         success: true,
         fromCache: true,
@@ -199,7 +199,7 @@ exports.getCourseDetails = async (req, res) => {
     // 1️⃣ Try Redis cache first
     const cached = await getCache(cacheKey);
     if (cached) {
-      console.log(`⚡ getCourseDetails [${courseId}] served from Redis cache`);
+      console.log(`course ${courseId} served from cache`);
       return res.status(200).json({
         success: true,
         fromCache: true,

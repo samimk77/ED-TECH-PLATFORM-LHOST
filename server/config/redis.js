@@ -22,22 +22,22 @@ const redisClient = process.env.REDIS_URL
     });
 
 redisClient.on("connect", () => {
-  const mode = process.env.REDIS_URL ? "Redis Cloud ☁️" : "Local Redis 🖥️";
-  console.log(`✅ Redis connected (${mode})`);
+  const mode = process.env.REDIS_URL ? "cloud" : "local";
+  console.log(`Redis connected (${mode})`);
 });
 
 redisClient.on("error", (err) => {
-  console.error("❌ Redis error:", err.message);
+  console.error("Redis error:", err.message);
 });
 
 redisClient.on("reconnecting", () => {
-  console.log("🔄 Redis reconnecting...");
+  console.log("Redis reconnecting...");
 });
 
 // Non-blocking connect — server won't crash if Redis is unavailable
 redisClient.connect().catch((err) => {
-  console.error("❌ Redis connection failed:", err.message);
-  console.warn("⚠️  Caching disabled — all requests will go to MongoDB");
+  console.error("Redis connection failed:", err.message);
+  console.warn("Caching disabled — requests will fall back to MongoDB");
 });
 
 module.exports = redisClient;

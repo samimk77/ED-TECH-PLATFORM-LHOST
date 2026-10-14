@@ -1,255 +1,192 @@
-# Edusity - StudyNotion Learning Platform
+# Edusity
 
-Edusity is a full-stack learning management platform built with the MERN stack. It allows students to browse and enroll in courses, instructors to create and manage course content, and admins to manage platform-level data such as categories and users.
+A full-stack ed-tech platform where students can browse and enroll in courses, instructors can create and manage content, and admins handle platform-level data.
+
+Built with the MERN stack, with Redis Cloud caching for fast course data delivery.
+
+---
 
 ## Tech Stack
 
 **Frontend**
-- React.js
-- Vite
+- React 19 + Vite
 - Redux Toolkit
-- React Router
+- React Router v7
 - Tailwind CSS
 - Axios
 
 **Backend**
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT Authentication
-- Bcrypt
-- Cookie Parser
-- Nodemailer
-- Cloudinary
-- Razorpay
-- Express File Upload
+- Node.js + Express
+- MongoDB + Mongoose
+- Redis Cloud (ioredis) — course caching
+- JWT + Bcrypt — auth
+- Cloudinary — media uploads
+- Razorpay — payments
+- Nodemailer — transactional email
+
+---
 
 ## Features
 
-- User signup and login
-- OTP-based email verification
-- JWT-based authentication
-- Role-based access control for Student, Instructor, and Admin
-- Student dashboard
-- Instructor course creation flow
-- Course sections and subsections
-- Course publishing
-- Course catalog and course details pages
-- Profile management
-- Display picture upload using Cloudinary
-- Razorpay payment integration
-- Contact form with email support
-- Admin routes for managing users and categories
+- Email OTP signup and login
+- JWT-based auth with role access (Student, Instructor, Admin)
+- Instructor course creation — sections, subsections, thumbnails
+- Course catalog and detail pages
+- Student enrollment via Razorpay
+- Profile management and avatar upload
+- Contact form with email delivery
+- Redis caching on course endpoints (~6× faster responses)
+- Admin routes for categories and users
+
+---
 
 ## Project Structure
 
-```text
+```
 edusity/
 ├── frontend/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   ├── data/
-│   │   ├── pages/
-│   │   ├── reducer/
-│   │   ├── services/
-│   │   └── slices/
-│   ├── package.json
-│   └── vite.config.js
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── services/
+│       └── slices/
 │
 ├── server/
-│   ├── config/
+│   ├── config/         # db, redis, cloudinary, cache TTL
 │   ├── controllers/
 │   ├── middlewares/
 │   ├── models/
 │   ├── routes/
-│   ├── utils/
-│   ├── index.js
-│   └── package.json
+│   └── utils/
 │
+├── .gitignore
 ├── package.json
 └── README.md
 ```
 
-## Backend API Modules
+---
 
-The backend follows an MVC-style structure:
+## API Routes
 
-- `models/` contains Mongoose schemas.
-- `controllers/` contains business logic.
-- `routes/` contains API route definitions.
-- `middlewares/` contains authentication and role-checking middleware.
-- `config/` contains database, Cloudinary, and Razorpay configuration.
-- `utils/` contains helper utilities such as mail sending and image upload.
-
-Main route groups:
-
-```text
-/api/v1/auth
-/api/v1/profile
-/api/v1/course
-/api/v1/payment
-/api/v1/contact
 ```
+POST   /api/v1/auth/*       — signup, login, OTP, password reset
+GET    /api/v1/profile/*    — profile data and updates
+GET    /api/v1/course/      — all courses (cached)
+GET    /api/v1/course/:id   — course details (cached)
+POST   /api/v1/course/      — create course (instructor)
+DELETE /api/v1/course/:id   — delete course
+PATCH  /api/v1/course/:id/publish
+POST   /api/v1/payment/*    — Razorpay order and verification
+POST   /api/v1/contact      — contact form
+```
+
+---
+
+## Caching
+
+Course list and course detail responses are cached in Redis Cloud with a 10-minute TTL.
+
+- First request hits MongoDB (~220 ms)
+- Subsequent requests are served from Redis (~30 ms)
+- Cache is invalidated automatically on create, update, delete, or publish
+
+To benchmark it locally:
+
+```bash
+node test-cache.js
+```
+
+---
 
 ## Environment Variables
 
-Create a `.env` file inside the `server/` folder:
+Copy `server/.env.example` to `server/.env` and fill in your values:
 
 ```env
 PORT=4000
-MONGODB_URL=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
+MONGODB_URL=
+
+JWT_SECRET=
 
 MAIL_HOST=smtp.gmail.com
-MAIL_USER=your_email
-MAIL_PASS=your_email_app_password
+MAIL_USER=
+MAIL_PASS=
 
-CLOUD_NAME=your_cloudinary_cloud_name
-API_KEY=your_cloudinary_api_key
-API_SECRET=your_cloudinary_api_secret
-FOLDER_NAME=your_cloudinary_folder_name
+CLOUD_NAME=
+API_KEY=
+API_SECRET=
+FOLDER_NAME=
 
-RAZORPAY_KEY=your_razorpay_key
-RAZORPAY_SECRET=your_razorpay_secret
+RAZORPAY_KEY=
+RAZORPAY_SECRET=
 
-CLIENT_URL=http://localhost:3000
+REDIS_URL=redis://default:<password>@<host>:<port>
 ```
 
-Create a `.env` file inside the `frontend/` folder:
+Frontend — create `frontend/.env`:
 
 ```env
 VITE_BASE_URL=http://localhost:4000/api/v1
-VITE_RAZORPAY_KEY_ID=your_razorpay_key
+VITE_RAZORPAY_KEY_ID=
 ```
 
-Do not commit `.env` files to GitHub.
+---
 
-## Installation
+## Getting Started
 
-Install root dependencies:
+Install all dependencies:
 
 ```bash
-npm install
+npm install              # root (concurrently)
+npm install --prefix server
+npm install --prefix frontend
 ```
 
-Install backend dependencies:
-
-```bash
-cd server
-npm install
-```
-
-Install frontend dependencies:
-
-```bash
-cd ../frontend
-npm install
-```
-
-## Running Locally
-
-From the root folder:
+Run both frontend and backend together:
 
 ```bash
 npm run dev
 ```
 
-This starts both the backend and frontend.
-
-Or run them separately:
-
-Backend:
+Or run separately:
 
 ```bash
-cd server
-npm run start
+npm run dev --prefix server     # http://localhost:4000
+npm run dev --prefix frontend   # http://localhost:3000
 ```
 
-Frontend:
+---
 
-```bash
-cd frontend
-npm run dev
-```
+## Auth Flow
 
-Default local URLs:
+1. User requests an OTP to their email
+2. OTP is stored in MongoDB with expiry
+3. User signs up with OTP + details → password hashed with bcrypt
+4. Login returns a JWT stored in an HTTP-only cookie
+5. Protected routes verify the token via middleware
+6. Role middleware restricts instructor and admin routes
 
-```text
-Frontend: http://localhost:3000
-Backend:  http://localhost:4000
-```
-
-## Authentication Flow
-
-1. User requests OTP using email.
-2. OTP is generated and stored in MongoDB.
-3. User submits signup details with OTP.
-4. Password is hashed using bcrypt.
-5. User data is saved in MongoDB.
-6. During login, credentials are verified.
-7. A JWT token is generated and returned to the client.
-8. Protected backend routes verify the token using authentication middleware.
-9. Role-based middleware restricts access for Student, Instructor, and Admin routes.
+---
 
 ## Course Flow
 
-1. Instructor creates a course.
-2. Course thumbnail is uploaded to Cloudinary.
-3. Instructor adds sections and subsections.
-4. Course can be published after required content is added.
-5. Students can view course details and enroll through payment.
+1. Instructor creates a course with a thumbnail
+2. Thumbnail is uploaded to Cloudinary
+3. Instructor adds sections and subsections
+4. Course is published once content is complete
+5. Students browse the catalog, view details, and enroll via Razorpay
 
-## Payment Flow
+---
 
-1. Student initiates course purchase.
-2. Backend creates a Razorpay order.
-3. Frontend opens Razorpay checkout.
-4. Razorpay returns payment details.
-5. Backend verifies payment signature.
-6. Student is enrolled in the course after successful verification.
+## Security Notes
 
-## Important Security Notes
+- All secrets live in `.env` — never committed to git
+- Passwords hashed with bcrypt
+- JWT verified on every protected request
+- CORS restricted to the frontend origin
+- Use HTTPS and strong secrets in production
 
-- Store secrets in environment variables.
-- Never commit `.env` files.
-- Use strong `JWT_SECRET` values in production.
-- Hash passwords before saving.
-- Validate all request bodies.
-- Use HTTPS in production.
-- Configure CORS using environment variables.
-- Add rate limiting for auth and OTP routes.
-- Use secure and HTTP-only cookies if using cookie-based auth.
-
-## Deployment Notes
-
-Before deploying:
-
-- Set production `VITE_BASE_URL`.
-- Set production backend environment variables.
-- Configure MongoDB Atlas network access.
-- Configure Cloudinary credentials.
-- Configure Razorpay live/test keys as needed.
-- Update CORS origin to the deployed frontend URL.
-- Build the frontend using:
-
-```bash
-cd frontend
-npm run build
-```
-
-## Future Improvements
-
-- Add refresh token support.
-- Add rate limiting for login and OTP APIs.
-- Add stronger request validation using Joi or Zod.
-- Add pagination for course and user listing APIs.
-- Add centralized error handling middleware.
-- Add logging with Winston or Pino.
-- Add automated tests.
-- Add Docker support.
-- Add CI/CD pipeline.
+---
 
 ## Author
 
