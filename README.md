@@ -37,6 +37,7 @@ Built with the MERN stack, with Redis Cloud caching for fast course data deliver
 - Contact form with email delivery
 - Redis caching on course endpoints (~6× faster responses)
 - Admin routes for categories and users
+- Rate Limiting on api endpoints like OTP and Login to prevent brute force attacks
 
 ---
 
